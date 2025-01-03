@@ -392,19 +392,14 @@ end
 ---@return string[]
 M.build_find_cmd = function(path, term, opts)
   opts = SearchOpts.from_tbl(opts and opts or {})
-
   local additional_opts = {}
 
+  local pattern = require("obsidian.patterns").search_pattern
+
   if term ~= nil then
-    if opts.include_non_markdown then
-      term = "*" .. term .. "*"
-    elseif not vim.endswith(term, ".md") then
-      term = "*" .. term .. "*.md"
-    else
-      term = "*" .. term
-    end
+    term = "*" .. term .. "*"
     additional_opts[#additional_opts + 1] = "-g"
-    additional_opts[#additional_opts + 1] = term
+    additional_opts[#additional_opts + 1] = pattern
   end
 
   if opts.ignore_case then
