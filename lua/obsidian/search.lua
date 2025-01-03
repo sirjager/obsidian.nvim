@@ -399,7 +399,6 @@ M.build_find_cmd = function(path, term, opts)
   if term ~= nil then
     term = "*" .. term .. "*"
     additional_opts[#additional_opts + 1] = "-g"
-    additional_opts[#additional_opts + 1] = term
     additional_opts[#additional_opts + 1] = pattern
   end
 
