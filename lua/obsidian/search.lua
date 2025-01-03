@@ -392,14 +392,32 @@ end
 ---@return string[]
 M.build_find_cmd = function(path, term, opts)
   opts = SearchOpts.from_tbl(opts and opts or {})
+
   local additional_opts = {}
 
-  local pattern = require("obsidian.patterns").search_pattern
-
   if term ~= nil then
-    term = "*" .. term .. "*"
+    local valid_extensions = require("obsidian.patterns").file_extensions
+    if opts.include_non_markdown then
+      term = "*" .. term .. "*"
+    else
+      -- Check if term does not already have a valid extension
+      local has_valid_extension = false
+      for _, ext in ipairs(valid_extensions) do
+        if vim.endswith(term, ext) then
+          has_valid_extension = true
+          break
+        end
+      end
+
+      if not has_valid_extension then
+        term = "*" .. term .. table.concat(valid_extensions, ",*") -- Match all valid extensions
+      else
+        term = "*" .. term
+      end
+    end
+
     additional_opts[#additional_opts + 1] = "-g"
-    additional_opts[#additional_opts + 1] = pattern
+    additional_opts[#additional_opts + 1] = term
   end
 
   if opts.ignore_case then
