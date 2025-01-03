@@ -10,9 +10,19 @@ local compat = require "obsidian.compat"
 
 local M = {}
 
-M._BASE_CMD = { "rg", "--no-config", "--type=md" }
-M._SEARCH_CMD = compat.flatten { M._BASE_CMD, "--json" }
-M._FIND_CMD = compat.flatten { M._BASE_CMD, "--files" }
+M._BASE_CMD = {
+  "rg",
+  "--no-config",
+  "--type=md",
+}
+M._SEARCH_CMD = compat.flatten {
+  M._BASE_CMD,
+  "--json",
+}
+M._FIND_CMD = compat.flatten {
+  M._BASE_CMD,
+  "--files",
+}
 
 ---@enum obsidian.search.RefTypes
 M.RefTypes = {
@@ -49,7 +59,9 @@ M.Patterns = {
 
 ---@type table<obsidian.search.RefTypes, { ignore_if_escape_prefix: boolean|? }>
 M.PatternConfig = {
-  [M.RefTypes.Tag] = { ignore_if_escape_prefix = true },
+  [M.RefTypes.Tag] = {
+    ignore_if_escape_prefix = true,
+  },
 }
 
 --- Find all matches of a pattern
@@ -62,7 +74,10 @@ M.find_matches = function(s, pattern_names)
   -- First find all inline code blocks so we can skip reference matches inside of those.
   local inline_code_blocks = {}
   for m_start, m_end in util.gfind(s, "`[^`]*`") do
-    inline_code_blocks[#inline_code_blocks + 1] = { m_start, m_end }
+    inline_code_blocks[#inline_code_blocks + 1] = {
+      m_start,
+      m_end,
+    }
   end
 
   local matches = {}
@@ -104,7 +119,11 @@ M.find_matches = function(s, pattern_names)
           end
 
           if not overlap and not skip_due_to_escape then
-            matches[#matches + 1] = { m_start, m_end, pattern_name }
+            matches[#matches + 1] = {
+              m_start,
+              m_end,
+              pattern_name,
+            }
           end
         end
 
@@ -130,7 +149,11 @@ end
 ---@return { [1]: integer, [2]: integer, [3]: obsidian.search.RefTypes }[]
 M.find_highlight = function(s)
   local matches = {}
-  for match in iter(M.find_matches(s, { M.RefTypes.Highlight })) do
+  for match in
+    iter(M.find_matches(s, {
+      M.RefTypes.Highlight,
+    }))
+  do
     -- Remove highlights that begin/end with whitespace
     local match_start, match_end, _ = unpack(match)
     local text = string.sub(s, match_start + 2, match_end - 2)
@@ -156,7 +179,11 @@ end
 M.find_refs = function(s, opts)
   opts = opts and opts or {}
 
-  local pattern_names = { M.RefTypes.WikiWithAlias, M.RefTypes.Wiki, M.RefTypes.Markdown }
+  local pattern_names = {
+    M.RefTypes.WikiWithAlias,
+    M.RefTypes.Wiki,
+    M.RefTypes.Markdown,
+  }
   if opts.include_naked_urls then
     pattern_names[#pattern_names + 1] = M.RefTypes.NakedUrl
   end
@@ -181,7 +208,12 @@ M.find_tags = function(s)
   local matches = {}
   -- NOTE: we search over all reference types to make sure we're not including anchor links within
   -- references, which otherwise look just like tags.
-  for match in iter(M.find_refs(s, { include_naked_urls = true, include_tags = true })) do
+  for match in
+    iter(M.find_refs(s, {
+      include_naked_urls = true,
+      include_tags = true,
+    }))
+  do
     local _, _, m_type = unpack(match)
     if m_type == M.RefTypes.Tag then
       matches[#matches + 1] = match
@@ -234,7 +266,10 @@ M.find_and_replace_refs = function(s)
   for i, piece in ipairs(pieces) do
     local i_end = length + string.len(piece)
     if is_ref[i] then
-      table.insert(indices, { length + 1, i_end })
+      table.insert(indices, {
+        length + 1,
+        i_end,
+      })
     end
     length = i_end
   end
@@ -254,11 +289,17 @@ M.find_code_blocks = function(lines)
   local start_idx
   for i, line in ipairs(lines) do
     if string.match(line, "^%s*```.*```%s*$") then
-      table.insert(blocks, { i, i })
+      table.insert(blocks, {
+        i,
+        i,
+      })
       start_idx = nil
     elseif string.match(line, "^%s*```") then
       if start_idx ~= nil then
-        table.insert(blocks, { start_idx, i })
+        table.insert(blocks, {
+          start_idx,
+          i,
+        })
         start_idx = nil
       else
         start_idx = i
@@ -361,7 +402,10 @@ M.build_search_cmd = function(dir, term, opts)
 
   local search_terms
   if type(term) == "string" then
-    search_terms = { "-e", term }
+    search_terms = {
+      "-e",
+      term,
+    }
   else
     search_terms = {}
     for t in iter(term) do
@@ -370,7 +414,9 @@ M.build_search_cmd = function(dir, term, opts)
     end
   end
 
-  local path = tostring(Path.new(dir):resolve { strict = true })
+  local path = tostring(Path.new(dir):resolve {
+    strict = true,
+  })
   if opts.escape_path then
     path = assert(vim.fn.fnameescape(path))
   end
@@ -399,6 +445,7 @@ M.build_find_cmd = function(path, term, opts)
   if term ~= nil then
     term = "*" .. term .. "*"
     additional_opts[#additional_opts + 1] = "-g"
+    additional_opts[#additional_opts + 1] = term
     additional_opts[#additional_opts + 1] = pattern
   end
 
@@ -413,7 +460,11 @@ M.build_find_cmd = function(path, term, opts)
     additional_opts[#additional_opts + 1] = path
   end
 
-  return compat.flatten { M._FIND_CMD, opts:to_ripgrep_opts(), additional_opts }
+  return compat.flatten {
+    M._FIND_CMD,
+    opts:to_ripgrep_opts(),
+    additional_opts,
+  }
 end
 
 --- Build the 'rg' grep command for pickers.
@@ -500,7 +551,9 @@ end
 ---@param on_exit fun(exit_code: integer)|?
 M.search_async = function(dir, term, opts, on_match, on_exit)
   local cmd = M.build_search_cmd(dir, term, opts)
-  run_job_async(cmd[1], { unpack(cmd, 2) }, function(line)
+  run_job_async(cmd[1], {
+    unpack(cmd, 2),
+  }, function(line)
     local data = vim.json.decode(line)
     if data["type"] == "match" then
       local match_data = data.data
@@ -555,9 +608,13 @@ end
 ---@param on_match fun(path: string)
 ---@param on_exit fun(exit_code: integer)|?
 M.find_async = function(dir, term, opts, on_match, on_exit)
-  local norm_dir = Path.new(dir):resolve { strict = true }
+  local norm_dir = Path.new(dir):resolve {
+    strict = true,
+  }
   local cmd = M.build_find_cmd(tostring(norm_dir), term, opts)
-  run_job_async(cmd[1], { unpack(cmd, 2) }, function(line)
+  run_job_async(cmd[1], {
+    unpack(cmd, 2),
+  }, function(line)
     on_match(line)
   end, function(code)
     if on_exit ~= nil then
@@ -577,7 +634,9 @@ M.find_notes_async = function(dir, note_file_name, callback)
   end
 
   local notes = {}
-  local root_dir = Path.new(dir):resolve { strict = true }
+  local root_dir = Path.new(dir):resolve {
+    strict = true,
+  }
 
   local visit_dir = function(entry)
     ---@type obsidian.Path
