@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Defined `M.file_extensions` for file extension checking (`.md`, `.mdx`, `.mdoc`).
 - Updated `lua/obsidian/client.lua` func `Client.path_is_note` to allow `file_extensions` `.md, .mdx, .mdoc` as note
 - Updated `lua/obsidian/init.lua` `vim.api.nvim_create_autocmd` from `patter = "*.md"` to `file_patterns` from `obsidian/pattern.lua`
-- Updated `lua/obsidian/search.lua` func `M.build_find_cmd` to properly include the term in search options. Fix for: ensure term is used in search options to resolve unused variable warning (W311)
+- Updated `lua/obsidian/search.lua` func `M.build_find_cmd` to properly include the search pattern
 
 ### Added
 
